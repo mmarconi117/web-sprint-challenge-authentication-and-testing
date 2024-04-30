@@ -1,6 +1,9 @@
 const router = require('express').Router();
 const Users = require('../users/user-model');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
+
 router.post('/register', async (req, res) => {
   /*
     IMPLEMENT
@@ -30,8 +33,15 @@ router.post('/register', async (req, res) => {
     const {username, password} = req.body;
     console.log(username, password)
 
-    const users = await Users.add({username, password});
-    console.log(users)
+    const existingUser = await Users.findBy({username}).first();
+    if(existingUser){
+        res.status(401).json({message: "username taken"})
+    } else {
+        const hash = bcrypt.hashSync(password, 8);
+        const user = await Users.add({username, password: hash});
+        res.status(201).json(user);
+    }
+
 
 });
 
@@ -61,5 +71,16 @@ router.post('/login', (req, res) => {
       the response body should include a string exactly as follows: "invalid credentials".
   */
 });
+
+function generateToken(user) {
+  const payload = {
+    subject: user.id,
+    username: user.username,
+  };
+  const options = {
+    expiresIn: '1d',
+  };
+  return jwt.sign(payload, secrets.jwtSecret, options);
+}
 
 module.exports = router;
