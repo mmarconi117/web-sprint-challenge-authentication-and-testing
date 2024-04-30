@@ -27,16 +27,27 @@ describe('POST /api/auth/register', () => {
 })
 
 describe('POST /api/auth/login', () => {
-  test('responds with 200', () => {
+  test('responds with 200', async () => {
+    // Create a unique username for testing login
+    const username = `test_user_${Date.now()}`;
+
+    // Register the user before attempting to login
+    await request(server)
+      .post('/api/auth/register')
+      .send({ username, password: 'chicago' })
+      .expect(201);
+
+    // Attempt login with the registered username
     return request(server)
       .post('/api/auth/login')
-      .send({ username: 'thanos', password: 'chicago' }) // Provide username and password
-      .expect(200)
-  })
+      .send({ username, password: 'chicago' })
+      .expect(200);
+  });
+
   test('responds with 400', () => {
     return request(server)
       .post('/api/auth/login')
       .send({ username: 'thanos' }) // Provide username and password
-      .expect(400)
-  })
-})
+      .expect(400);
+  });
+});
