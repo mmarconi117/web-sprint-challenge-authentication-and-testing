@@ -12,11 +12,12 @@ test('sanity', () => {
 
 describe('POST /api/auth/register', () => {
   test('responds with 201', () => {
+    const username = `test_user_${Date.now()}`; // Generate a unique username
     return request(server)
       .post('/api/auth/register')
-      .send({ username: 'thanos', password: 'chicago' }) // Provide username and password
-      .expect(201)
-  })
+      .send({ username, password: 'chicago' })
+      .expect(201);
+  });
   test('responds with 400', () => {
     return request(server)
       .post('/api/auth/register')
