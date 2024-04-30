@@ -2,6 +2,8 @@ const router = require('express').Router();
 const Users = require('../users/user-model');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const jwtSecret = process.env.JWT_SECRET || 'your_jwt_secret';
+
 require('dotenv').config();
 
 router.post('/register', async (req, res) => {
@@ -45,8 +47,7 @@ router.post('/register', async (req, res) => {
 
 });
 
-router.post('/login', (req, res) => {
-  res.end('implement login, please!');
+router.post('/login', async (req, res) => {
   /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
@@ -70,6 +71,38 @@ router.post('/login', (req, res) => {
     4- On FAILED login due to `username` not existing in the db, or `password` being incorrect,
       the response body should include a string exactly as follows: "invalid credentials".
   */
+const {username, password} = req.body;
+
+ try {
+  // Find user by username
+  const user = await Users.findBy({ username }).first();
+
+  // Check if user exists
+  if (!user) {
+    return res.status(401).json({ message: "invalid credentials" });
+  }
+
+  // Compare passwords
+  const passwordMatch = bcrypt.compareSync(password, user.password);
+
+  if (!passwordMatch) {
+    return res.status(401).json({ message: "invalid credentials" });
+  }
+
+  // Generate JWT token
+  const token = generateToken(user);
+
+  // Return success message and token
+  res.status(200).json({
+    message: `welcome, ${user.username}`,
+    token
+  });
+} catch (error) {
+  console.error("Error occurred during login:", error);
+  res.status(500).json({ message: "Server error while logging in" });
+}
+
+
 });
 
 function generateToken(user) {
@@ -80,7 +113,7 @@ function generateToken(user) {
   const options = {
     expiresIn: '1d',
   };
-  return jwt.sign(payload, secrets.jwtSecret, options);
+  return jwt.sign(payload, jwtSecret, options);
 }
 
 module.exports = router;
