@@ -2,11 +2,13 @@ const router = require('express').Router();
 const Users = require('../users/user-model');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const validateCred = require('../middleware/validateCred');
+const uniqueName = require('../middleware/uniqueName');
 const jwtSecret = process.env.JWT_SECRET || 'your_jwt_secret';
 
 require('dotenv').config();
 
-router.post('/register', async (req, res) => {
+router.post('/register', validateCred, uniqueName, async (req, res) => {
   /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
@@ -33,16 +35,15 @@ router.post('/register', async (req, res) => {
       the response body should include a string exactly as follows: "username taken".
   */
     const {username, password} = req.body;
-    console.log(username, password)
 
-    const existingUser = await Users.findBy({username}).first();
-    if(existingUser){
-        res.status(401).json({message: "username taken"})
-    } else {
+    // const existingUser = await Users.findBy({username}).first();
+    // if(existingUser){
+    //     res.status(401).json({message: "username taken"})
+    // } else {
         const hash = bcrypt.hashSync(password, 8);
         const user = await Users.add({username, password: hash});
         res.status(201).json(user);
-    }
+    //}
 
 
 });
@@ -98,7 +99,7 @@ const {username, password} = req.body;
     token
   });
 } catch (error) {
-  console.error("Error occurred during login:", error);
+  // console.error("Error occurred during login:", error);
   res.status(500).json({ message: "Server error while logging in" });
 }
 
