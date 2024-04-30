@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const validateCred = require('../middleware/validateCred');
 const uniqueName = require('../middleware/uniqueName');
+const invalidCred = require('../middleware/invalidCred');
 const jwtSecret = process.env.JWT_SECRET || 'your_jwt_secret';
 
 require('dotenv').config();
@@ -48,8 +49,8 @@ router.post('/register', validateCred, uniqueName, async (req, res) => {
 
 });
 
-router.post('/login', async (req, res) => {
-  /*
+router.post('/login', validateCred, invalidCred, async (req, res) => {
+    /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
 
@@ -72,36 +73,24 @@ router.post('/login', async (req, res) => {
     4- On FAILED login due to `username` not existing in the db, or `password` being incorrect,
       the response body should include a string exactly as follows: "invalid credentials".
   */
-const {username, password} = req.body;
+      const { username } = req.body;
 
- try {
-  // Find user by username
-  const user = await Users.findBy({ username }).first();
+      try {
+        // Find user by username
+        const user = await Users.findBy({ username }).first();
 
-  // Check if user exists
-  if (!user) {
-    return res.status(401).json({ message: "invalid credentials" });
-  }
+        // Generate JWT token
+        const token = generateToken(user);
 
-  // Compare passwords
-  const passwordMatch = bcrypt.compareSync(password, user.password);
-
-  if (!passwordMatch) {
-    return res.status(401).json({ message: "invalid credentials" });
-  }
-
-  // Generate JWT token
-  const token = generateToken(user);
-
-  // Return success message and token
-  res.status(200).json({
-    message: `welcome, ${user.username}`,
-    token
-  });
-} catch (error) {
-  // console.error("Error occurred during login:", error);
-  res.status(500).json({ message: "Server error while logging in" });
-}
+        // Return success message and token
+        res.status(200).json({
+          message: `Welcome, ${user.username}`,
+          token
+        });
+      } catch (error) {
+        console.error("Error occurred during login:", error);
+        res.status(500).json({ message: "Server error while logging in" });
+      }
 
 
 });
